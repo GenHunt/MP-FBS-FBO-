@@ -10,3 +10,4 @@ pydantic==2.5.0
 openpyxl==3.11.0
 win-inet-pton==1.0.1
 pywin32==305
+pyinstaller==6.1.0
