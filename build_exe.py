@@ -18,7 +18,6 @@ def build_exe():
         'main.py',
         '--name=Ozon-FBS-Label-Printer',
         '--windowed',
-        '--icon=icon.ico',
         '--onefile',
         '--add-data=data:data',
         '--add-data=logs:logs',
