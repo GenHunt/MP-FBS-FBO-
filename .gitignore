@@ -1,0 +1,29 @@
+# Настройки (могут содержать реальные API-ключи)
+settings.json
+
+# Сгенерированные файлы и папки сборки
+output/print_jobs/*.pdf
+output/print_jobs/print_log.txt
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# Виртуальные окружения
+.venv/
+venv/
+env/
+
+# Временные файлы
+*.tmp
+*.bak
+*.log
+
+# Примечание: OzonFbsLabelPrinter.spec НЕ исключён — spec-файл должен быть в репозитории
+# Файлы START_WINDOWS.bat, START_WINDOWS.ps1, README_ONE_CLICK.md также включены в репозиторий

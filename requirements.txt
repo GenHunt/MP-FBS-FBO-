@@ -1,13 +1,30 @@
-PyQt6==6.6.1
-PyQt6-Qt6==6.6.1
-PyQt6-sip==13.6.0
-requests==2.31.0
-python-dotenv==1.0.0
-Pillow==10.1.0
-reportlab==4.0.7
-python-barcode==0.15.1
-pydantic==2.5.0
-openpyxl==3.1.0
-win-inet-pton==1.0.1
-pywin32==305
-pyinstaller==6.1.0
+# ============================================================
+# Ozon FBS Label App — зависимости
+# Python 3.11+
+# ============================================================
+
+# --- UI ---
+PySide6>=6.5.0
+
+# --- HTTP / Ozon API ---
+requests>=2.31.0
+
+# --- PDF-генерация ---
+reportlab>=4.0.0
+
+# --- Штрихкоды ---
+python-barcode[images]>=0.15.1   # Code128, EAN и другие (с поддержкой Pillow)
+Pillow>=10.0.0                   # Требуется для python-barcode ImageWriter
+
+# --- Опционально: печать на Windows (устанавливать отдельно) ---
+# pywin32>=306                   # Только Windows; установить вручную: pip install pywin32
+
+# --- Опционально: конвертация PDF→PNG для предпросмотра ---
+# pdf2image>=1.16.3              # Требует poppler: https://poppler.freedesktop.org/
+
+# --- Тестирование ---
+pytest>=7.4.0
+pytest-qt>=4.2.0                 # Тесты Qt-виджетов (опционально)
+
+# --- Сборка в EXE (опционально, только Windows) ---
+# pyinstaller>=6.0               # pip install pyinstaller
