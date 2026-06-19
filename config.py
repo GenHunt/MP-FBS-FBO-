@@ -1,54 +1,65 @@
+# -*- coding: utf-8 -*-
 """
-Application configuration and constants
+Application configuration
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+# Load environment variables
+load_dotenv()
 
-# Application info
-APP_NAME = os.getenv('APP_NAME', 'Ozon FBS Label Printer')
-APP_VERSION = '1.1.0'
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+# Project root
+PROJECT_ROOT = Path(__file__).parent
 
-# Ozon API
-OZON_CLIENT_ID = os.getenv('OZON_CLIENT_ID', '')
-OZON_API_KEY = os.getenv('OZON_API_KEY', '')
-OZON_API_BASE_URL = 'https://api-seller.ozon.ru'
-
-# Paths
-BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / 'data'
-LOGS_DIR = BASE_DIR / 'logs'
+# Directories
+DATA_DIR = PROJECT_ROOT / 'data'
+LOGS_DIR = PROJECT_ROOT / 'logs'
 TEMPLATES_DIR = DATA_DIR / 'templates'
-DB_PATH = DATA_DIR / 'ozon_label_printer.db'
-LOG_FILE = LOGS_DIR / 'ozon_label_printer.log'
+DATABASE_DIR = DATA_DIR
 
-# Ensure directories exist
+# Create directories if they don't exist
 DATA_DIR.mkdir(exist_ok=True)
 LOGS_DIR.mkdir(exist_ok=True)
 TEMPLATES_DIR.mkdir(exist_ok=True)
 
-# Printer settings
+# Database
+DATABASE_PATH = DATABASE_DIR / 'ozon_label_printer.db'
+
+# Logging
+LOG_FILE = LOGS_DIR / 'ozon_label_printer.log'
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+# Application
+APP_NAME = 'Ozon FBS Label Printer'
+APP_VERSION = '1.1.0'
+APP_AUTHOR = 'GenHunt'
+
+# API Configuration
+OZON_CLIENT_ID = os.getenv('OZON_CLIENT_ID', '')
+OZON_API_KEY = os.getenv('OZON_API_KEY', '')
+OZON_API_URL = 'https://api.ozon.ru'
+
+# Printer Configuration
 PRINTER_NAME = os.getenv('PRINTER_NAME', 'Xprinter XP-365B')
 DEFAULT_PRINTER_DPI = int(os.getenv('DEFAULT_PRINTER_DPI', '203'))
 
-# Label settings
-LABEL_SIZES = {
-    '58x40mm': (58, 40),
-    '58x60mm': (58, 60),
-    '100x150mm': (100, 150),
-    '100x100mm': (100, 100),
-}
-DEFAULT_LABEL_SIZE = os.getenv('DEFAULT_LABEL_SIZE', '58x40mm')
+# Label Configuration
+DEFAULT_LABEL_SIZE = os.getenv('DEFAULT_LABEL_SIZE', '58x40')
 DEFAULT_TEMPLATE = os.getenv('DEFAULT_TEMPLATE', 'default')
 
-# Logging
-LOG_LEVEL = 'DEBUG' if DEBUG else 'INFO'
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-LOG_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
-LOG_BACKUP_COUNT = 5
+LABEL_SIZES = {
+    '58x40': {'width': 58, 'height': 40},
+    '60x40': {'width': 60, 'height': 40},
+    '80x50': {'width': 80, 'height': 50},
+    '100x150': {'width': 100, 'height': 150},
+}
+
+# UI Configuration
+WINDOW_WIDTH = 1400
+WINDOW_HEIGHT = 900
+WINDOW_TITLE = f'{APP_NAME} v{APP_VERSION}'
+
+# Request Configuration
+REQUEST_TIMEOUT = 30
+MAX_RETRIES = 3
