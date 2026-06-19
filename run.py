@@ -14,6 +14,16 @@ import os
 import sys
 from pathlib import Path
 
+# На Windows консоль по умолчанию использует cp1252/cp866 и не может
+# вывести кириллицу — принудительно переключаем stdout/stderr на UTF-8.
+for _stream in (sys.stdout, sys.stderr):
+    reconfigure = getattr(_stream, "reconfigure", None)
+    if reconfigure is not None:
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
 # Добавляем корень проекта в PYTHONPATH
 PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT))
