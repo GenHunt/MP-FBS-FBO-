@@ -15,6 +15,13 @@ class ElementType(Enum):
     LINE = "line"
 
 
+class PrintType(Enum):
+    """Print type options"""
+    ROUTING = "routing"
+    INTERNAL = "internal"
+    BOTH = "both"
+
+
 class TextAlignment(Enum):
     """Text alignment options"""
     LEFT = "left"
