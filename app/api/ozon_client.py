@@ -79,6 +79,43 @@ class OzonAPIError(Exception):
         self.response = response
 
 
+class OzonCredentialError(OzonAPIError):
+    """Некорректные учётные данные (Client-Id / Api-Key)."""
+
+
+# Понятное пользователю сообщение, без низкоуровневого 'latin-1 codec'.
+CREDENTIAL_ERROR_MESSAGE = (
+    "Client-Id и Api-Key должны быть скопированы из кабинета Ozon "
+    "без русских букв, пробелов и переносов строк. "
+    "Проверьте поля авторизации."
+)
+
+
+def _sanitize_credential(value: str) -> str:
+    """Убрать пробелы/переносы строк по краям значения заголовка."""
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _validate_credentials(client_id: str, api_key: str) -> None:
+    """
+    Проверить, что Client-Id и Api-Key пригодны для HTTP-заголовков.
+
+    requests кодирует значения заголовков в latin-1, поэтому кириллица и
+    другие не-ASCII символы вызывают UnicodeEncodeError ещё до отправки
+    запроса. Здесь мы перехватываем это заранее и показываем понятное
+    сообщение вместо "'latin-1' codec can't encode...".
+    """
+    for value in (client_id, api_key):
+        if not value:
+            raise OzonCredentialError(CREDENTIAL_ERROR_MESSAGE)
+        try:
+            value.encode("ascii")
+        except UnicodeEncodeError:
+            raise OzonCredentialError(CREDENTIAL_ERROR_MESSAGE)
+
+
 class OzonClient:
     """
     Клиент Ozon Seller API.
@@ -92,8 +129,8 @@ class OzonClient:
     BASE_URL = "https://api-seller.ozon.ru"
 
     def __init__(self, client_id: str = "", api_key: str = "", mock_mode: bool = True):
-        self.client_id = client_id
-        self.api_key = api_key
+        self.client_id = _sanitize_credential(client_id)
+        self.api_key = _sanitize_credential(api_key)
         self.mock_mode = mock_mode
         self._session = None
 
@@ -104,6 +141,7 @@ class OzonClient:
     def _get_session(self):
         """Инициализировать requests.Session (lazy)."""
         if self._session is None:
+            _validate_credentials(self.client_id, self.api_key)
             try:
                 import requests
                 self._session = requests.Session()

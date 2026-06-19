@@ -7,7 +7,15 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.api.ozon_client import OzonClient, OzonAPIError, MOCK_POSTINGS
+from app.api.ozon_client import (
+    OzonClient,
+    OzonAPIError,
+    OzonCredentialError,
+    MOCK_POSTINGS,
+    CREDENTIAL_ERROR_MESSAGE,
+    _sanitize_credential,
+    _validate_credentials,
+)
 
 
 class TestOzonClientMock:
@@ -149,15 +157,86 @@ class TestOzonClientNormalize:
 
 
 class TestOzonClientRealMode:
-    """Проверяем, что реальный режим не запускается без ключей (сетевые ошибки)."""
+    """Проверяем поведение реального режима с валидацией ключей."""
 
-    def test_real_mode_raises_on_missing_requests(self):
-        client = OzonClient(client_id="", api_key="", mock_mode=False)
-        # В sandbox requests может быть доступен, но API отклонит запрос
-        # Проверяем только что _get_session не падает при наличии requests
+    def test_get_session_with_valid_ascii_credentials(self):
+        client = OzonClient(client_id="123456", api_key="abc-def-123", mock_mode=False)
         try:
-            import requests
-            session = client._get_session()
-            assert session is not None
+            import requests  # noqa: F401
         except ImportError:
             pytest.skip("requests не установлен")
+        session = client._get_session()
+        assert session is not None
+        assert session.headers["Client-Id"] == "123456"
+        assert session.headers["Api-Key"] == "abc-def-123"
+
+
+class TestCredentialSanitization:
+    """Очистка значений Client-Id / Api-Key."""
+
+    def test_init_strips_whitespace(self):
+        client = OzonClient(client_id="  123456  ", api_key="\tkey-value\n", mock_mode=False)
+        assert client.client_id == "123456"
+        assert client.api_key == "key-value"
+
+    def test_init_strips_newlines(self):
+        client = OzonClient(client_id="123456\r\n", api_key="\nkey\n", mock_mode=False)
+        assert client.client_id == "123456"
+        assert client.api_key == "key"
+
+    def test_sanitize_none_returns_empty(self):
+        assert _sanitize_credential(None) == ""
+
+    def test_sanitize_keeps_inner_value(self):
+        assert _sanitize_credential("  ab cd  ") == "ab cd"
+
+
+class TestCredentialValidation:
+    """Валидация ключей до сетевых запросов (защита от latin-1 codec error)."""
+
+    def test_cyrillic_client_id_raises_friendly_error(self):
+        client = OzonClient(client_id="Идентификатор", api_key="valid-key", mock_mode=False)
+        with pytest.raises(OzonCredentialError) as exc:
+            client._get_session()
+        assert "русских букв" in str(exc.value)
+        assert "latin-1" not in str(exc.value).lower()
+
+    def test_cyrillic_api_key_raises_friendly_error(self):
+        client = OzonClient(client_id="123456", api_key="Ключ", mock_mode=False)
+        with pytest.raises(OzonCredentialError) as exc:
+            client._get_session()
+        assert str(exc.value) == CREDENTIAL_ERROR_MESSAGE
+
+    def test_empty_credentials_raise(self):
+        client = OzonClient(client_id="", api_key="", mock_mode=False)
+        with pytest.raises(OzonCredentialError):
+            client._get_session()
+
+    def test_whitespace_only_credentials_raise(self):
+        client = OzonClient(client_id="   ", api_key="   ", mock_mode=False)
+        with pytest.raises(OzonCredentialError):
+            client._get_session()
+
+    def test_credential_error_is_ozon_api_error(self):
+        """OzonCredentialError должен ловиться как OzonAPIError в UI."""
+        assert issubclass(OzonCredentialError, OzonAPIError)
+
+    def test_validate_passes_for_ascii(self):
+        # Не должно бросать исключение
+        _validate_credentials("123456", "abc-DEF-789")
+
+    def test_post_with_cyrillic_credentials_does_not_leak_latin1(self):
+        """
+        Регрессия: не-ASCII ключи приводили к 'latin-1' codec can't encode...
+        Теперь _post должен бросать понятную OzonCredentialError.
+        """
+        client = OzonClient(client_id="Клиент", api_key="Ключ", mock_mode=False)
+        try:
+            import requests  # noqa: F401
+        except ImportError:
+            pytest.skip("requests не установлен")
+        with pytest.raises(OzonCredentialError) as exc:
+            client._post("/v3/posting/fbs/unfulfilled/list", {})
+        msg = str(exc.value).lower()
+        assert "latin-1" not in msg
+        assert "codec" not in msg
